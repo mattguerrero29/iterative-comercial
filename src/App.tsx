@@ -3,6 +3,7 @@ import { faltaConfiguracion, repo } from "./lib/repo";
 import { reiniciarDemo } from "./lib/localRepo";
 import type { Oportunidad, Usuario } from "./lib/types";
 import Login from "./components/Login";
+import EstablecerClave from "./components/EstablecerClave";
 import Pipeline from "./components/Pipeline";
 import Detalle from "./components/Detalle";
 import Nueva from "./components/Nueva";
@@ -11,6 +12,9 @@ import Tarifario from "./components/Tarifario";
 import { TARIFA_EJEMPLO, tarifaVigente, type VersionTarifa } from "./caso/tarifario";
 
 function useRuta() {
+  if (window.location.hash.includes("access_token=") || window.location.hash.includes("error=")) {
+    if (!repo.necesitaClave()) window.history.replaceState(null, "", window.location.pathname + "#/");
+  }
   const [ruta, setRuta] = useState(window.location.hash.slice(1) || "/");
   useEffect(() => {
     const f = () => setRuta(window.location.hash.slice(1) || "/");
@@ -29,6 +33,7 @@ export default function App() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [error, setError] = useState("");
   const [tarifas, setTarifas] = useState<VersionTarifa[]>([]);
+  const [pideClave, setPideClave] = useState(() => repo.necesitaClave());
 
   const cargar = useCallback(async () => {
     try {
@@ -48,6 +53,13 @@ export default function App() {
         <p className="sub" style={{ marginTop: 10 }}>Faltan las variables VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en Vercel. Agréguelas y vuelva a publicar.</p>
       </div></div>
     );
+  }
+  if (pideClave) {
+    return <EstablecerClave onListo={async () => {
+      window.history.replaceState(null, "", window.location.pathname + "#/");
+      setPideClave(false);
+      setUsuario(await repo.sesion().catch(() => null));
+    }} />;
   }
   if (usuario === undefined) return null;
   if (!usuario) return <Login onEntrar={setUsuario} />;

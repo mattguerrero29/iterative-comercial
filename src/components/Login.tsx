@@ -5,7 +5,8 @@ import type { Usuario } from "../lib/types";
 export default function Login({ onEntrar }: { onEntrar: (u: Usuario) => void }) {
   const [email, setEmail] = useState("");
   const [clave, setClave] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(repo.errorEnlace());
+  const [aviso, setAviso] = useState("");
   const [demo, setDemo] = useState<Usuario[]>([]);
 
   useEffect(() => { if (repo.modo === "demo") repo.usuarios().then(setDemo); }, []);
@@ -36,8 +37,15 @@ export default function Login({ onEntrar }: { onEntrar: (u: Usuario) => void }) 
             <label className="campo">Correo corporativo<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" placeholder="nombre@iterativeco.com" /></label>
             <label className="campo">Contraseña<input type="password" required value={clave} onChange={(e) => setClave(e.target.value)} autoComplete="current-password" /></label>
             <button className="btn primario" type="submit">Entrar</button>
+            <button type="button" className="btn chico" style={{ justifySelf: "start" }} onClick={async () => {
+              setError(""); setAviso("");
+              if (!email.trim()) { setError("Escriba su correo corporativo y vuelva a presionar «¿Olvidó su contraseña?»."); return; }
+              try { await repo.recuperarClave(email); setAviso("Si el correo está autorizado, le llegará un enlace para crear una contraseña nueva."); }
+              catch (e) { setError((e as Error).message); }
+            }}>¿Olvidó su contraseña?</button>
           </form>
         )}
+        {aviso && <p className="sub" style={{ marginTop: 12 }}>{aviso}</p>}
         {error && <p className="error">{error}</p>}
       </div>
     </div>

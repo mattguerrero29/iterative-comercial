@@ -33,6 +33,11 @@ const aTarifa = (r: any): VersionTarifa => ({
   autorId: r.autor_id, autorNombre: r.autor?.nombre ?? "", revisorNombre: r.revisor?.nombre ?? null, creado: r.created_at, revisado: r.revisado_at,
 });
 
+// Enlaces del correo (invitación o recuperación): Supabase devuelve el tipo y la sesión en el hash de la URL.
+const paramsEnlace = new URLSearchParams(typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "");
+const TIPO_ENLACE = paramsEnlace.get("type");
+const ERROR_ENLACE = paramsEnlace.get("error_description");
+
 export const DOMINIO = "@iterativeco.com";
 const correoAutorizado = (email?: string | null) => !!email && email.trim().toLowerCase().endsWith(DOMINIO);
 
@@ -125,6 +130,22 @@ export function crearSupabaseRepo(url: string, key: string): Repo {
       const { data, error } = await sb.rpc("proponer_tarifa", { p_datos: datos, p_motivo: motivo });
       if (error) throw new Error(error.message);
       return aTarifa({ ...data, autor: { nombre: autor.nombre } });
+    },
+    necesitaClave() { return (TIPO_ENLACE === "invite" || TIPO_ENLACE === "recovery") && !ERROR_ENLACE; },
+    errorEnlace() {
+      return ERROR_ENLACE ? "El enlace del correo venció o ya se usó. Pida uno nuevo con «¿Olvidó su contraseña?» o al administrador." : "";
+    },
+    async establecerClave(clave) {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) throw new Error("El enlace venció. Pida uno nuevo con «¿Olvidó su contraseña?».");
+      if (!correoAutorizado(data.session.user.email)) { await sb.auth.signOut(); throw new Error(`Solo pueden ingresar correos ${DOMINIO}.`); }
+      const { error } = await sb.auth.updateUser({ password: clave });
+      if (error) throw new Error(error.message.includes("different") ? "La contraseña nueva debe ser distinta de la anterior." : "No se pudo guardar la contraseña. Intente de nuevo.");
+    },
+    async recuperarClave(email) {
+      if (!correoAutorizado(email)) throw new Error(`Solo pueden ingresar correos ${DOMINIO}.`);
+      const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
+      if (error) throw new Error("No se pudo enviar el correo. Intente en unos minutos.");
     },
     async revisarTarifa(id, aprobar) {
       const { error } = await sb.rpc("revisar_tarifa", { p_id: id, p_aprobar: aprobar });

@@ -77,4 +77,10 @@ export interface Repo {
   /** Supervisor: crea una versión aprobada. Comercial: crea una propuesta pendiente de aprobación. */
   proponerTarifa(datos: Tarifa, motivo: string, autor: Usuario): Promise<VersionTarifa>;
   revisarTarifa(id: string, aprobar: boolean, revisor: Usuario): Promise<void>;
+  /** El usuario llegó desde un enlace de invitación o de recuperación y debe crear su contraseña. */
+  necesitaClave(): boolean;
+  /** Error que trae un enlace vencido o inválido (vacío si no hay). */
+  errorEnlace(): string;
+  establecerClave(clave: string): Promise<void>;
+  recuperarClave(email: string): Promise<void>;
 }
