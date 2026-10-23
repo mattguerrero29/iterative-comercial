@@ -67,7 +67,12 @@ export function crearSupabaseRepo(url: string, key: string): Repo {
     async login(email, clave) {
       if (!correoAutorizado(email)) throw new Error(`Solo pueden ingresar correos ${DOMINIO}.`);
       const { data, error } = await sb.auth.signInWithPassword({ email: email.trim(), password: clave });
-      if (error) throw new Error("Correo o contraseña incorrectos.");
+      if (error) {
+        const m = error.message.toLowerCase();
+        if (m.includes("not confirmed")) throw new Error("El correo no está confirmado. En Supabase → Authentication → Users, confirme el usuario o créelo de nuevo marcando «Auto Confirm User».");
+        if (m.includes("invalid login credentials")) throw new Error("Correo o contraseña incorrectos. Si el usuario se creó por invitación, todavía no tiene contraseña: asígnele una en Supabase → Authentication → Users.");
+        throw new Error(`No se pudo ingresar: ${error.message}`);
+      }
       if (!correoAutorizado(data.user.email)) { await sb.auth.signOut(); throw new Error(`Solo pueden ingresar correos ${DOMINIO}.`); }
       return perfil(data.user.id);
     },
