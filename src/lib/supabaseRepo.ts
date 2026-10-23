@@ -33,14 +33,21 @@ const aTarifa = (r: any): VersionTarifa => ({
   autorId: r.autor_id, autorNombre: r.autor?.nombre ?? "", revisorNombre: r.revisor?.nombre ?? null, creado: r.created_at, revisado: r.revisado_at,
 });
 
+export const DOMINIO = "@iterativeco.com";
+const correoAutorizado = (email?: string | null) => !!email && email.trim().toLowerCase().endsWith(DOMINIO);
+
 const aUsuario = (r: any): Usuario => ({ id: r.id, nombre: r.nombre, email: r.email, rol: r.rol });
 
 export function crearSupabaseRepo(url: string, key: string): Repo {
   const sb: SupabaseClient = createClient(url, key);
 
+  // Sin perfil o con un correo de otro dominio se cierra la sesión (la base de datos tampoco entrega datos).
   const perfil = async (id: string) => {
     const { data, error } = await sb.from("perfiles").select("*").eq("id", id).single();
-    if (error) throw new Error("Su usuario no tiene perfil asignado. Pida al administrador que lo cree.");
+    if (error || !data) {
+      await sb.auth.signOut();
+      throw new Error("Su usuario no está autorizado. Pida al administrador que lo habilite.");
+    }
     return aUsuario(data);
   };
 
@@ -48,11 +55,15 @@ export function crearSupabaseRepo(url: string, key: string): Repo {
     modo: "supabase",
     async sesion() {
       const { data } = await sb.auth.getSession();
-      return data.session ? perfil(data.session.user.id) : null;
+      if (!data.session) return null;
+      if (!correoAutorizado(data.session.user.email)) { await sb.auth.signOut(); return null; }
+      return perfil(data.session.user.id).catch(() => null);
     },
     async login(email, clave) {
-      const { data, error } = await sb.auth.signInWithPassword({ email, password: clave });
+      if (!correoAutorizado(email)) throw new Error(`Solo pueden ingresar correos ${DOMINIO}.`);
+      const { data, error } = await sb.auth.signInWithPassword({ email: email.trim(), password: clave });
       if (error) throw new Error("Correo o contraseña incorrectos.");
+      if (!correoAutorizado(data.user.email)) { await sb.auth.signOut(); throw new Error(`Solo pueden ingresar correos ${DOMINIO}.`); }
       return perfil(data.user.id);
     },
     async logout() { await sb.auth.signOut(); },
