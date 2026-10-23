@@ -127,6 +127,10 @@ export const localRepo: Repo = {
       revisorNombre: sup ? autor.nombre : null, creado: ahora, revisado: sup ? ahora : null };
     s.tarifas.push(v); guardar(s); return v;
   },
+  necesitaClave() { return false; },
+  errorEnlace() { return ""; },
+  async establecerClave() { /* modo demo: sin contraseñas */ },
+  async recuperarClave() { throw new Error("En el modo demo no hay contraseñas."); },
   async revisarTarifa(id, aprobar, revisor) {
     if (revisor.rol !== "supervisor") throw new Error("Solo el supervisor puede aprobar cambios al tarifario.");
     const s = estado();
