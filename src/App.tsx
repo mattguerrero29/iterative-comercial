@@ -83,6 +83,7 @@ export default function App() {
         </nav>
         <div className="yo">
           <span>{usuario.nombre} · {esSup ? "Supervisor" : "Comercial"}</span>
+          {repo.modo === "supabase" && <a className="btn chico" href="#/clave">Contraseña</a>}
           <button className="btn chico" onClick={async () => { await repo.logout(); setUsuario(null); ir("/"); }}>Salir</button>
         </div>
       </header>
@@ -94,7 +95,9 @@ export default function App() {
       )}
       <main className="contenido">
         {error && <p className="error">{error}</p>}
-        {ruta === "/nueva" ? (
+        {ruta === "/clave" ? (
+          <EstablecerClave dentro onListo={() => { alert("Contraseña actualizada."); ir("/"); }} />
+        ) : ruta === "/nueva" ? (
           <Nueva usuario={usuario} usuarios={usuarios} onCreada={async (o) => { await cargar(); ir("/op/" + o.id); }} />
         ) : ruta === "/tarifario" ? (
           <Tarifario usuario={usuario} versiones={tarifas} onCambio={cargar} />
