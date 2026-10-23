@@ -33,7 +33,7 @@ export default function Login({ onEntrar }: { onEntrar: (u: Usuario) => void }) 
           </>
         ) : (
           <form onSubmit={(e) => { e.preventDefault(); entrar(email, clave); }} style={{ display: "grid", gap: 14 }}>
-            <label className="campo">Correo<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" /></label>
+            <label className="campo">Correo corporativo<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" placeholder="nombre@iterativeco.com" /></label>
             <label className="campo">Contraseña<input type="password" required value={clave} onChange={(e) => setClave(e.target.value)} autoComplete="current-password" /></label>
             <button className="btn primario" type="submit">Entrar</button>
           </form>
