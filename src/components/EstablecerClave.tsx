@@ -2,7 +2,7 @@ import { useState } from "react";
 import { repo } from "../lib/repo";
 
 /** Pantalla a la que llega un usuario desde el correo de invitación o de recuperación de contraseña. */
-export default function EstablecerClave({ onListo }: { onListo: () => void }) {
+export default function EstablecerClave({ onListo, dentro }: { onListo: () => void; dentro?: boolean }) {
   const [clave, setClave] = useState("");
   const [repetir, setRepetir] = useState("");
   const [error, setError] = useState("");
@@ -18,6 +18,29 @@ export default function EstablecerClave({ onListo }: { onListo: () => void }) {
     finally { setOcupado(false); }
   };
 
+  const formulario = (
+    <>
+      <form onSubmit={guardar} style={{ display: "grid", gap: 14 }}>
+        <label className="campo">Contraseña nueva<input type="password" required value={clave} onChange={(e) => setClave(e.target.value)} autoComplete="new-password" /></label>
+        <label className="campo">Repita la contraseña<input type="password" required value={repetir} onChange={(e) => setRepetir(e.target.value)} autoComplete="new-password" /></label>
+        <button className="btn primario" type="submit" disabled={ocupado}>{ocupado ? "Guardando…" : dentro ? "Cambiar contraseña" : "Guardar y entrar"}</button>
+      </form>
+      {error && <p className="error">{error}</p>}
+    </>
+  );
+
+  // Dentro de la app (usuario con sesión): cambiar la contraseña temporal
+  if (dentro) {
+    return (
+      <section className="tarjeta" style={{ maxWidth: 440 }}>
+        <div className="etiqueta">Mi cuenta</div>
+        <h1 style={{ marginBottom: 8 }}>Cambiar contraseña</h1>
+        <p className="sub" style={{ marginBottom: 18 }}>Mínimo 10 caracteres. Si le asignaron una contraseña temporal, cámbiela aquí.</p>
+        {formulario}
+      </section>
+    );
+  }
+
   return (
     <div className="login">
       <div className="caja">
@@ -25,12 +48,7 @@ export default function EstablecerClave({ onListo }: { onListo: () => void }) {
         <div className="etiqueta">Control comercial</div>
         <h1 style={{ marginBottom: 8 }}>Cree su contraseña</h1>
         <p className="sub" style={{ marginBottom: 18 }}>Es la que usará cada vez que ingrese con su correo @iterativeco.com.</p>
-        <form onSubmit={guardar} style={{ display: "grid", gap: 14 }}>
-          <label className="campo">Contraseña nueva<input type="password" required value={clave} onChange={(e) => setClave(e.target.value)} autoComplete="new-password" /></label>
-          <label className="campo">Repita la contraseña<input type="password" required value={repetir} onChange={(e) => setRepetir(e.target.value)} autoComplete="new-password" /></label>
-          <button className="btn primario" type="submit" disabled={ocupado}>{ocupado ? "Guardando…" : "Guardar y entrar"}</button>
-        </form>
-        {error && <p className="error">{error}</p>}
+        {formulario}
       </div>
     </div>
   );
